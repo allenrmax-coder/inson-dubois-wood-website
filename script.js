@@ -181,83 +181,103 @@ function initReveals() {
   });
 }
 
-/* ───── 06 · HERO ───── */
+/* ───── 06 · HERO · pinned 3-act scroll scene ───── */
 function initHero() {
   const hero = document.querySelector('[data-hero]');
   if (!hero) return;
 
-  const eyebrow  = hero.querySelector('.hero__eyebrow');
+  const eyebrow    = hero.querySelector('[data-hero-eyebrow]');
   const titleLines = hero.querySelectorAll('.hero__title .line__inner');
-  const lede     = hero.querySelector('.hero__lede');
-  const cta      = hero.querySelector('.hero__cta');
-  const cue      = hero.querySelector('[data-hero-cue]');
-  const bgImg    = hero.querySelector('.hero__bg img');
+  const lede       = hero.querySelector('[data-hero-lede]');
+  const cta        = hero.querySelector('[data-hero-cta]');
+  const cue        = hero.querySelector('[data-hero-cue]');
+  const corners    = hero.querySelectorAll('[data-hero-corner]');
+  const caption    = hero.querySelector('[data-hero-caption]');
+  const captionEls = caption ? caption.querySelectorAll('.hero__caption-eyebrow, .hero__caption-title') : [];
+  const content    = hero.querySelector('[data-hero-content]');
+  const bgImg      = hero.querySelector('.hero__bg img');
+  const glow       = hero.querySelector('[data-hero-glow]');
 
   if (!window.gsap) {
-    // GSAP unavailable — show everything statically
-    [eyebrow, lede, cta, cue].forEach(el => el && (el.style.opacity = '1'));
+    [eyebrow, lede, cta, cue, ...corners].forEach(el => el && (el.style.opacity = '1'));
     titleLines.forEach(el => { el.style.transform = 'none'; el.style.opacity = '1'; });
     return;
   }
 
-  // Lock initial mask state in pixels (avoids yPercent/percent-translate confusion)
+  /* ── ENTRANCE ── */
+  // Lock the line-mask initial state in pixels (more reliable than yPercent vs CSS percent-translate)
   titleLines.forEach((el) => {
     const h = el.getBoundingClientRect().height || el.offsetHeight || 100;
     gsap.set(el, { y: h, opacity: 1 });
   });
 
-  // Entrance — opacity + line-mask reveal
-  const tl = gsap.timeline({ delay: .15 });
-  if (eyebrow) tl.to(eyebrow, { opacity: 1, duration: .9, ease: 'power2.out' }, 0);
-  if (titleLines.length) {
-    tl.to(titleLines, { y: 0, duration: 1.15, stagger: .08, ease: 'expo.out' }, .1);
-  }
-  if (lede) tl.to(lede, { opacity: 1, duration: .9, ease: 'power2.out' }, .55);
-  if (cta)  tl.to(cta,  { opacity: 1, duration: .8, ease: 'power2.out' }, .75);
-  if (cue)  tl.to(cue,  { opacity: 1, duration: .7, ease: 'power2.out' }, .95);
+  const ent = gsap.timeline({ delay: .15 });
+  if (eyebrow) ent.to(eyebrow, { opacity: 1, duration: .9, ease: 'power2.out' }, 0);
+  if (titleLines.length)
+    ent.to(titleLines, { y: 0, duration: 1.15, stagger: .08, ease: 'expo.out' }, .08);
+  if (corners.length)
+    ent.to(corners, { opacity: 1, duration: .8, stagger: .07, ease: 'power2.out' }, .3);
+  if (lede) ent.to(lede, { opacity: 1, duration: .9, ease: 'power2.out' }, .55);
+  if (cta)  ent.to(cta,  { opacity: 1, duration: .8, ease: 'power2.out' }, .72);
+  if (cue)  ent.to(cue,  { opacity: 1, duration: .7, ease: 'power2.out' }, .9);
 
-  if (reduceMotion) return;
+  if (reduceMotion || isMobile()) return;
 
-  // Scroll parallax on the background image
-  if (bgImg) {
-    gsap.to(bgImg, {
-      yPercent: 14,
-      scale: 1.18,
-      ease: 'none',
-      scrollTrigger: {
-        trigger: hero,
-        start: 'top top',
-        end: 'bottom top',
-        scrub: 0.6,
-      }
-    });
-  }
-
-  // Fade hero content out as user scrolls past
-  gsap.to(hero.querySelector('.hero__content'), {
-    yPercent: -12,
-    opacity: 0.4,
-    ease: 'none',
+  /* ── 3-ACT SCRUBBED CHOREOGRAPHY ──
+       The hero is 240vh tall with a sticky inner. As you scroll:
+         Act I  (0.00 → 0.30) — held composition, brand reads strong
+         Act II (0.30 → 0.65) — content drifts up + fades, image brightens & zooms
+         Act III(0.65 → 1.00) — "quiet light" caption fades in, image fully open
+  */
+  const tl = gsap.timeline({
     scrollTrigger: {
       trigger: hero,
       start: 'top top',
-      end: 'bottom top',
-      scrub: 0.4,
+      end:   'bottom bottom',
+      scrub: 0.6,
+      invalidateOnRefresh: true,
     }
   });
 
-  // Hide cue after a tiny scroll
-  if (cue) {
-    gsap.to(cue, {
-      opacity: 0,
+  // Background image: parallax up + zoom out + brighten through the scene
+  if (bgImg) {
+    tl.to(bgImg, {
+      yPercent: 12,
+      scale: 1.04,
+      filter: 'brightness(.85) saturate(.95) contrast(1.0)',
       ease: 'none',
-      scrollTrigger: {
-        trigger: hero,
-        start: 'top top',
-        end: 'top+=120 top',
-        scrub: true,
-      }
-    });
+    }, 0);
+  }
+
+  // Bronze glow expands and dims
+  if (glow) {
+    tl.to(glow, { scale: 1.35, opacity: 0.25, ease: 'none' }, 0);
+  }
+
+  // Hero content (eyebrow + title + lede + CTA) drifts up at its own speed
+  if (content) {
+    tl.to(content, { yPercent: -18, ease: 'none' }, 0);
+    // Lede + CTA fade in Act II
+    if (lede) tl.to(lede, { opacity: 0, duration: .2, ease: 'power2.in' }, 0.28);
+    if (cta)  tl.to(cta,  { opacity: 0, duration: .2, ease: 'power2.in' }, 0.32);
+  }
+
+  // Corner labels drift apart slightly for depth
+  corners.forEach((c, i) => {
+    const dir = (i % 2 === 0) ? -1 : 1;
+    tl.to(c, { y: dir * 24, opacity: 0.35, ease: 'none' }, 0.3);
+  });
+
+  // Act III caption "quiet light." fades in centered over the image
+  if (caption && captionEls.length) {
+    gsap.set(captionEls, { y: 30, opacity: 0 });
+    tl.to(caption,    { opacity: 1, duration: .12 }, 0.55);
+    tl.to(captionEls, { y: 0, opacity: 1, duration: .25, stagger: .06, ease: 'expo.out' }, 0.58);
+  }
+
+  // Scroll cue fades immediately
+  if (cue) {
+    tl.to(cue, { opacity: 0, duration: .1 }, 0.05);
   }
 }
 

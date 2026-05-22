@@ -13,7 +13,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=20" />
+  <link rel="stylesheet" href="styles.css?v=21" />
 </head>
 <body class="is-loading">
 
@@ -101,39 +101,68 @@
 
   <main id="top" class="main">
 
-    <!-- ═════ HERO ═════ -->
+    <!-- ═════ HERO — pinned 3-act scroll scene ═════ -->
     <section class="hero" data-hero>
-      <div class="hero__bg" data-hero-bg>
-        <img src="https://insonduboiswood.com/wp-content/uploads/2018/08/slider_002.jpg" alt="" />
-        <div class="hero__bg-veil"></div>
-      </div>
+      <div class="hero__sticky">
 
-      <div class="hero__content">
-        <span class="hero__eyebrow">Atelier · New York · Est. 1996</span>
-
-        <h1 class="hero__title">
-          <span class="line"><span class="line__inner">Architecture</span></span>
-          <span class="line"><span class="line__inner">of&nbsp;quiet</span></span>
-          <span class="line"><span class="line__inner"><em>light.</em></span></span>
-        </h1>
-
-        <p class="hero__lede">
-          A design and build atelier composing residences across three continents — guided by classical training and patient craft.
-        </p>
-
-        <div class="hero__cta">
-          <a href="#work"    class="btn btn--primary">
-            <span>View Projects</span><span class="btn__arrow" aria-hidden="true">→</span>
-          </a>
-          <a href="#contact" class="btn btn--ghost">
-            <span>Begin a Project</span>
-          </a>
+        <!-- Background image (parallaxes + brightens through scene) -->
+        <div class="hero__bg" data-hero-bg>
+          <img src="https://insonduboiswood.com/wp-content/uploads/2018/08/slider_002.jpg" alt="" />
+          <div class="hero__bg-veil"></div>
+          <div class="hero__bg-glow" data-hero-glow aria-hidden="true"></div>
         </div>
-      </div>
 
-      <div class="hero__cue" data-hero-cue aria-hidden="true">
-        <span>Scroll</span>
-        <span class="hero__cue-line"></span>
+        <!-- Corner editorial meta -->
+        <div class="hero__corner hero__corner--tl" data-hero-corner>
+          <span class="meta-label">N · 40.7488°</span>
+          <span class="meta-label">W · 73.9986°</span>
+        </div>
+        <div class="hero__corner hero__corner--tr" data-hero-corner>
+          <span class="meta-label">Est. 1996</span>
+          <span class="meta-label">New York</span>
+        </div>
+        <div class="hero__corner hero__corner--bl" data-hero-corner>
+          <span class="meta-label">Three continents</span>
+          <span class="meta-label">Seven countries</span>
+        </div>
+
+        <!-- Act 1 content — the main brand & headline -->
+        <div class="hero__content" data-hero-content>
+          <span class="hero__eyebrow" data-hero-eyebrow>
+            <span class="hero__eyebrow-dot"></span>
+            Atelier · Design &amp; Build
+          </span>
+
+          <h1 class="hero__title">
+            <span class="line"><span class="line__inner">Inson</span></span>
+            <span class="line"><span class="line__inner">Dubois</span></span>
+            <span class="line"><span class="line__inner"><em>Wood.</em></span></span>
+          </h1>
+
+          <p class="hero__lede" data-hero-lede>
+            A design and build atelier composing residences across three continents.
+          </p>
+
+          <div class="hero__cta" data-hero-cta>
+            <a href="#work"    class="btn btn--primary">
+              <span>View Projects</span><span class="btn__arrow" aria-hidden="true">→</span>
+            </a>
+            <a href="#contact" class="btn btn--ghost">
+              <span>Begin a Project</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Act 2 caption — fades in as user scrolls past hero content -->
+        <div class="hero__caption" data-hero-caption aria-hidden="true">
+          <span class="hero__caption-eyebrow">— A practice in</span>
+          <h2 class="hero__caption-title"><em>quiet light.</em></h2>
+        </div>
+
+        <div class="hero__cue" data-hero-cue aria-hidden="true">
+          <span>Scroll · Three acts</span>
+          <span class="hero__cue-line"></span>
+        </div>
       </div>
     </section>
 
@@ -543,6 +572,6 @@
   <!-- Scripts -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
-  <script src="script.js?v=20"></script>
+  <script src="script.js?v=21"></script>
 </body>
 </html>
