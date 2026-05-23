@@ -73,8 +73,27 @@ function runLoader() {
   });
 }
 
-/* ───── 02 · SMOOTH ANCHORS ───── */
+/* ───── 02 · SCROLL — Lenis smooth wheel + anchor scrolling ───── */
+let lenis = null;
 function initAnchors() {
+  const useLenis = window.Lenis &&
+    !reduceMotion &&
+    window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+
+  if (useLenis) {
+    lenis = new Lenis({
+      duration: 1.05,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 0.9,
+      touchMultiplier: 1.2,
+      lerp: 0.085,
+    });
+    lenis.on('scroll', () => window.ScrollTrigger && ScrollTrigger.update());
+    gsap.ticker.add((time) => lenis.raf(time * 1000));
+    gsap.ticker.lagSmoothing(0);
+  }
+
   document.querySelectorAll('a[href^="#"]').forEach((a) => {
     a.addEventListener('click', (e) => {
       const id = a.getAttribute('href');
@@ -82,7 +101,8 @@ function initAnchors() {
       const target = document.querySelector(id);
       if (!target) return;
       e.preventDefault();
-      target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+      if (lenis) lenis.scrollTo(target, { offset: 0, duration: 1.4 });
+      else target.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
       closeMenu();
     });
   });
@@ -164,9 +184,9 @@ function initReveals() {
     gsap.set(inner, { y: offset, opacity: 1 });
     ScrollTrigger.create({
       trigger: wrapper,
-      start: 'top 88%',
+      start: 'top 85%',
       once: true,
-      onEnter: () => gsap.to(inner, { y: 0, duration: 1.05, ease: 'expo.out' })
+      onEnter: () => gsap.to(inner, { y: 0, duration: 1.2, ease: 'expo.out' })
     });
   });
 
@@ -229,76 +249,96 @@ function initHero() {
          Act II (0.30 → 0.65) — content drifts up + fades, image brightens & zooms
          Act III(0.65 → 1.00) — "quiet light" caption fades in, image fully open
   */
+  /* ── SCRUBBED CHOREOGRAPHY — strictly phased ──
+     The hero is 240vh tall. The timeline runs in 3 clearly separated
+     phases so the title block fully exits BEFORE the act-II caption arrives.
+       Phase I  (0.00 → 0.30) — held composition; background slowly comes alive
+       Phase II (0.30 → 0.55) — title block fades out cleanly
+       Phase III(0.55 → 1.00) — "interior design." caption fades in & settles
+  */
+  if (caption && captionEls.length) {
+    gsap.set(caption,    { opacity: 0 });
+    gsap.set(captionEls, { y: 36, opacity: 0 });
+  }
+
   const tl = gsap.timeline({
+    defaults: { ease: 'power3.inOut' },
     scrollTrigger: {
       trigger: hero,
       start: 'top top',
       end:   'bottom bottom',
-      scrub: 0.6,
+      scrub: 1.1,                                  // longer scrub = smoother lag
       invalidateOnRefresh: true,
     }
   });
 
-  // Background image: parallax up + zoom out + brighten through the scene
+  /* Phase I — background slowly evolves through the whole scene */
   if (bgImg) {
     tl.to(bgImg, {
-      yPercent: 12,
-      scale: 1.04,
-      filter: 'brightness(.85) saturate(.95) contrast(1.0)',
+      yPercent: 14,
+      scale: 1.05,
+      filter: 'brightness(.88) saturate(.95) contrast(1.0)',
       ease: 'none',
     }, 0);
   }
+  if (glow) tl.to(glow, { scale: 1.4, opacity: 0.22, ease: 'none' }, 0);
 
-  // Bronze glow expands and dims
-  if (glow) {
-    tl.to(glow, { scale: 1.35, opacity: 0.25, ease: 'none' }, 0);
-  }
-
-  // Hero content (eyebrow + title + lede + CTA) drifts up at its own speed
+  /* Phase II — content drifts up and FADES OUT first */
   if (content) {
-    tl.to(content, { yPercent: -18, ease: 'none' }, 0);
-    // Lede + CTA fade in Act II
-    if (lede) tl.to(lede, { opacity: 0, duration: .2, ease: 'power2.in' }, 0.28);
-    if (cta)  tl.to(cta,  { opacity: 0, duration: .2, ease: 'power2.in' }, 0.32);
+    tl.to(content, { yPercent: -14, ease: 'power2.in' },        0.18);
+    tl.to(content, { opacity: 0,    duration: 0.18, ease: 'power3.in' }, 0.32);
   }
+  // Lede + CTA fade a touch earlier so the title is the last to leave
+  if (lede) tl.to(lede, { opacity: 0, duration: 0.12, ease: 'power2.in' }, 0.26);
+  if (cta)  tl.to(cta,  { opacity: 0, duration: 0.12, ease: 'power2.in' }, 0.28);
 
-  // Corner labels drift apart slightly for depth
+  // Corner labels drift outward slightly, fade with the content
   corners.forEach((c, i) => {
     const dir = (i % 2 === 0) ? -1 : 1;
-    tl.to(c, { y: dir * 24, opacity: 0.35, ease: 'none' }, 0.3);
+    tl.to(c, { y: dir * 22, opacity: 0,
+               duration: 0.18, ease: 'power3.in' }, 0.34);
   });
 
-  // Act III caption "quiet light." fades in centered over the image
+  /* Phase III — caption arrives AFTER content has cleared */
   if (caption && captionEls.length) {
-    gsap.set(captionEls, { y: 30, opacity: 0 });
-    tl.to(caption,    { opacity: 1, duration: .12 }, 0.55);
-    tl.to(captionEls, { y: 0, opacity: 1, duration: .25, stagger: .06, ease: 'expo.out' }, 0.58);
+    tl.to(caption,    { opacity: 1, duration: 0.16, ease: 'power2.out' }, 0.58);
+    captionEls.forEach((el, i) => {
+      tl.to(el, { y: 0, opacity: 1, duration: 0.14, ease: 'expo.out' }, 0.62 + i * 0.04);
+    });
+    // Subtle continued drift through the rest of the scene
+    tl.to(caption, { y: -14, ease: 'none' }, 0.78);
   }
 
-  // Scroll cue fades immediately
-  if (cue) {
-    tl.to(cue, { opacity: 0, duration: .1 }, 0.05);
-  }
+  /* Scroll cue fades almost immediately on any scroll */
+  if (cue) tl.to(cue, { opacity: 0, duration: 0.08 }, 0.04);
 }
 
-/* ───── 07 · CINEMATIC REVEAL ───── */
+/* ───── 07 · CINEMATIC REVEAL — strictly phased, cleaner timing ─────
+   The timeline runs in 5 clearly separated phases so text always
+   finishes fading before the camera/frame transitions. */
 function initRevealScene() {
   const scene = document.querySelector('[data-scene="reveal"]');
   if (!scene || reduceMotion || isMobile() || !window.gsap) return;
 
-  const frame  = scene.querySelector('[data-reveal-frame]');
-  const img    = scene.querySelector('[data-reveal-img]');
+  const frame   = scene.querySelector('[data-reveal-frame]');
+  const img     = scene.querySelector('[data-reveal-img]');
   const captions = scene.querySelectorAll('.reveal-caption');
   const corners  = scene.querySelectorAll('.reveal-corner');
   const progBar  = scene.querySelector('[data-reveal-progress-bar]');
   if (!frame || !img) return;
 
+  // Lock initial state — image is heavily zoomed (the detail crop)
+  gsap.set(img,      { scale: 2.4, x: '6%', y: '-2%' });
+  gsap.set(corners,  { opacity: 0, y: -6 });
+  gsap.set(captions, { opacity: 0, y: 24 });
+
   const tl = gsap.timeline({
+    defaults: { ease: 'power3.inOut' },
     scrollTrigger: {
       trigger: scene,
       start: 'top top',
       end:   'bottom bottom',
-      scrub: 0.6,
+      scrub: 1.1,                                  // longer scrub = smoother lag
       invalidateOnRefresh: true,
       onUpdate: (self) => {
         if (progBar) progBar.style.transform = `scaleX(${self.progress.toFixed(3)})`;
@@ -306,32 +346,36 @@ function initRevealScene() {
     }
   });
 
-  tl.to(corners, { opacity: 1, duration: .08, ease: 'power2.out' }, 0.04);
+  /* PHASE A — settle (0.00 → 0.10) — corners gracefully appear */
+  tl.to(corners, { opacity: 1, y: 0, duration: 0.10, ease: 'power2.out' }, 0.02);
 
-  // Frame growth — two phases (postage-stamp → mid → full bleed)
-  tl.to(frame, { width: '30vw', duration: .28, ease: 'power2.inOut' }, 0.05);
-  tl.to(frame, { width: '100vw', height: '100vh', duration: .55, ease: 'power2.inOut' }, 0.34);
+  /* PHASE B — Stage 1 caption "The detail" (0.06 → 0.26)
+     Text reads, then fully fades before any frame movement. */
+  tl.to(captions[0], { opacity: 1, y: 0, duration: 0.06, ease: 'power3.out' }, 0.06);
+  tl.to(captions[0], { opacity: 0, y: -16, duration: 0.06, ease: 'power3.in'  }, 0.21);
 
-  // Image "camera pullback" — zoom-out
-  tl.fromTo(img,
-    { scale: 2.4, x: '6%', y: '-2%' },
-    { scale: 1.7, x: '3%', y: '-1%', duration: .3, ease: 'power2.out' }, 0.05);
-  tl.to(img, { scale: 1.05, x: '0%', y: '0%', duration: .55, ease: 'power2.inOut' }, 0.34);
-  tl.to(img, { scale: 1.0, duration: .25, ease: 'none' }, 0.78);
-  tl.to(img, { filter: 'brightness(0.85) contrast(1.06) saturate(0.9)', duration: .55, ease: 'power2.out' }, 0.32);
+  /* PHASE C — first pullback (0.30 → 0.48) — frame grows, camera zooms out */
+  tl.to(frame, { width: '46vw', duration: 0.18 }, 0.30);
+  tl.to(img,   { scale: 1.55, x: '3%', y: '-1%', duration: 0.18 }, 0.30);
 
-  // Three caption stages cross-fade
-  const stages = [
-    { in: 0.08, out: 0.30 },
-    { in: 0.36, out: 0.58 },
-    { in: 0.64, out: 0.92 },
-  ];
-  captions.forEach((cap, i) => {
-    const w = stages[i];
-    if (!w) return;
-    tl.fromTo(cap, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: .04 }, w.in);
-    tl.to(cap, { opacity: 0, y: -30, duration: .04 }, w.out);
-  });
+  /* PHASE D — Stage 2 caption "The room" (0.50 → 0.66)
+     Frame is settled; caption reads alone. */
+  tl.to(captions[1], { opacity: 1, y: 0, duration: 0.06, ease: 'power3.out' }, 0.50);
+  tl.to(captions[1], { opacity: 0, y: -16, duration: 0.06, ease: 'power3.in'  }, 0.61);
+
+  /* PHASE E — second pullback (0.66 → 0.84) — full-bleed */
+  tl.to(frame, { width: '100vw', height: '100vh', duration: 0.20 }, 0.66);
+  tl.to(img,   { scale: 1.05, x: '0%', y: '0%', duration: 0.20 }, 0.66);
+  tl.to(img,   { filter: 'brightness(0.88) contrast(1.05) saturate(0.92)', duration: 0.15, ease: 'power2.out' }, 0.68);
+
+  /* PHASE F — Stage 3 caption "The residence" (0.86 → 1.00) */
+  tl.to(captions[2], { opacity: 1, y: 0, duration: 0.05, ease: 'power3.out' }, 0.86);
+  // Hold visible until almost the end — fade with corners as scene exits
+  tl.to(captions[2], { opacity: 0, y: -16, duration: 0.05, ease: 'power3.in' }, 0.96);
+  tl.to(corners,     { opacity: 0, duration: 0.05, ease: 'power2.in' }, 0.95);
+
+  /* Subtle continued zoom in the final moments for film feel */
+  tl.to(img, { scale: 1.0, duration: 0.18, ease: 'none' }, 0.82);
 }
 
 /* ───── 08 · WORK — horizontal pinned ───── */
@@ -360,7 +404,7 @@ function initWork() {
       trigger: viewport,
       start: 'top top+=70',
       end:   () => '+=' + (distance() * PIN_FACTOR),
-      scrub: 0.6,
+      scrub: 1.0,                                  // smoother scrub lag
       pin: viewport,
       anticipatePin: 1,
       invalidateOnRefresh: true,
