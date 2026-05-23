@@ -491,14 +491,34 @@ function initCounters() {
   });
 }
 
-/* ───── 12 · FOOTER GIANT DRIFT ───── */
-function initFooterGiant() {
-  const el = document.querySelector('[data-footer-giant]');
-  if (!el || !window.gsap || reduceMotion) return;
-  gsap.fromTo(el, { xPercent: 6 }, {
-    xPercent: -6, ease: 'none',
-    scrollTrigger: { trigger: el, start: 'top bottom', end: 'bottom top', scrub: 1 }
-  });
+/* ───── 12 · FOOTER MARQUEE — cursor spotlight ───── */
+function initFooterMarquee() {
+  const m = document.querySelector('[data-footer-marquee]');
+  if (!m) return;
+  let rect = m.getBoundingClientRect();
+  const refresh = () => { rect = m.getBoundingClientRect(); };
+  window.addEventListener('resize', refresh, { passive: true });
+  window.addEventListener('scroll', refresh, { passive: true });
+
+  // Throttle to next animation frame
+  let pending = false;
+  let lastX = 0, lastY = 0;
+  const apply = () => {
+    pending = false;
+    const x = ((lastX - rect.left) / rect.width) * 100;
+    const y = ((lastY - rect.top) / rect.height) * 100;
+    m.style.setProperty('--mx', x.toFixed(2) + '%');
+    m.style.setProperty('--my', y.toFixed(2) + '%');
+  };
+
+  m.addEventListener('mousemove', (e) => {
+    lastX = e.clientX;
+    lastY = e.clientY;
+    if (!pending) {
+      pending = true;
+      requestAnimationFrame(apply);
+    }
+  }, { passive: true });
 }
 
 /* ───── 13 · CONTACT FORM ───── */
@@ -535,7 +555,7 @@ function initContactForm() {
     initWork();
     initProcess();
     initCounters();
-    initFooterGiant();
+    initFooterMarquee();
     if (window.ScrollTrigger) ScrollTrigger.refresh();
   });
 })();
