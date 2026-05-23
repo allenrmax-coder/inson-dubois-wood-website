@@ -378,49 +378,7 @@ function initWork() {
   });
 }
 
-/* ───── 09 · PROCESS — cross-fade pinned acts ───── */
-function initProcess() {
-  const section = document.querySelector('[data-process]');
-  if (!section || !window.gsap) return;
-  if (isMobile() || reduceMotion) {
-    section.querySelectorAll('.process-act').forEach(act => act.classList.add('is-active'));
-    return;
-  }
-
-  const acts = section.querySelectorAll('.process-act');
-  const rail = section.querySelectorAll('.process-rail__dot');
-  if (!acts.length) return;
-
-  gsap.set(acts, { opacity: 0, y: 28 });
-  gsap.set(acts[0], { opacity: 1, y: 0 });
-  acts[0].classList.add('is-active');
-
-  ScrollTrigger.create({
-    trigger: section,
-    start: 'top top',
-    end:   'bottom bottom',
-    onUpdate: (self) => {
-      const p = self.progress;
-      const total = acts.length;
-      const idx = Math.min(total - 1, Math.floor(p * total));
-      acts.forEach((act, i) => {
-        if (i === idx) {
-          if (!act.classList.contains('is-active')) {
-            act.classList.add('is-active');
-            gsap.to(act, { opacity: 1, y: 0, duration: .7, ease: 'power3.out', overwrite: 'auto' });
-          }
-        } else if (act.classList.contains('is-active')) {
-          act.classList.remove('is-active');
-          const exitY = i < idx ? -28 : 28;
-          gsap.to(act, { opacity: 0, y: exitY, duration: .55, ease: 'power3.in', overwrite: 'auto' });
-        }
-      });
-      rail.forEach((dot, i) => dot.classList.toggle('is-active', i === idx));
-    }
-  });
-}
-
-/* ───── 10 · SERVICES — preview swap ───── */
+/* ───── 09 · SERVICES — preview swap ───── */
 function initServices() {
   const section = document.querySelector('[data-services]');
   if (!section) return;
@@ -553,7 +511,6 @@ function initContactForm() {
     initHero();
     initRevealScene();
     initWork();
-    initProcess();
     initCounters();
     initFooterMarquee();
     if (window.ScrollTrigger) ScrollTrigger.refresh();
