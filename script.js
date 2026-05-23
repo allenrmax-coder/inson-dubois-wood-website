@@ -332,6 +332,15 @@ function initRevealScene() {
   gsap.set(corners,  { opacity: 0, y: -6 });
   gsap.set(captions, { opacity: 0, y: 24 });
 
+  // Graceful entrance — frame opens up as the scene approaches the viewport.
+  // CSS handles the actual easing via .is-revealed class.
+  ScrollTrigger.create({
+    trigger: scene,
+    start: 'top 92%',
+    once: true,
+    onEnter: () => frame.classList.add('is-revealed')
+  });
+
   const tl = gsap.timeline({
     defaults: { ease: 'power3.inOut' },
     scrollTrigger: {
