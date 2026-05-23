@@ -349,14 +349,18 @@ function initWork() {
   const projects = work.querySelectorAll('[data-proj]');
   const distance = () => Math.max(0, track.scrollWidth - viewport.clientWidth);
 
+  // Quicker pass: pin only lasts ~55% of the horizontal track distance,
+  // so the user advances through projects ~1.8x faster per scroll unit.
+  const PIN_FACTOR = 0.55;
+
   gsap.to(track, {
     x: () => -distance(),
     ease: 'none',
     scrollTrigger: {
       trigger: viewport,
       start: 'top top+=70',
-      end:   () => '+=' + distance(),
-      scrub: 0.7,
+      end:   () => '+=' + (distance() * PIN_FACTOR),
+      scrub: 0.6,
       pin: viewport,
       anticipatePin: 1,
       invalidateOnRefresh: true,
