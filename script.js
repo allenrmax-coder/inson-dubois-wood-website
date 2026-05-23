@@ -313,27 +313,27 @@ function initHero() {
   if (cue) tl.to(cue, { opacity: 0, duration: 0.08 }, 0.04);
 }
 
-/* ───── 07 · CINEMATIC REVEAL — strictly phased, cleaner timing ─────
-   The timeline runs in 5 clearly separated phases so text always
-   finishes fading before the camera/frame transitions. */
+/* ───── 07 · CINEMATIC REVEAL — auto-play timeline ─────
+   When the section enters view, the whole pullback plays automatically
+   (no scroll-driven scrubbing). Total runtime ~4.8s.
+*/
 function initRevealScene() {
   const scene = document.querySelector('[data-scene="reveal"]');
   if (!scene || reduceMotion || isMobile() || !window.gsap) return;
 
-  const frame   = scene.querySelector('[data-reveal-frame]');
-  const img     = scene.querySelector('[data-reveal-img]');
+  const frame    = scene.querySelector('[data-reveal-frame]');
+  const img      = scene.querySelector('[data-reveal-img]');
   const captions = scene.querySelectorAll('.reveal-caption');
   const corners  = scene.querySelectorAll('.reveal-corner');
-  const progBar  = scene.querySelector('[data-reveal-progress-bar]');
   if (!frame || !img) return;
 
   // Lock initial state — image is heavily zoomed (the detail crop)
   gsap.set(img,      { scale: 2.4, x: '6%', y: '-2%' });
   gsap.set(corners,  { opacity: 0, y: -6 });
   gsap.set(captions, { opacity: 0, y: 24 });
+  gsap.set(frame,    { width: '18vw', height: 'auto' });   // CSS aspect-ratio still applies
 
-  // Graceful entrance — frame opens up as the scene approaches the viewport.
-  // CSS handles the actual easing via .is-revealed class.
+  // Graceful frame entrance — clip-path shutter opens as scene approaches
   ScrollTrigger.create({
     trigger: scene,
     start: 'top 92%',
@@ -341,50 +341,60 @@ function initRevealScene() {
     onEnter: () => frame.classList.add('is-revealed')
   });
 
+  // Build the auto-play pullback timeline
   const tl = gsap.timeline({
-    defaults: { ease: 'power3.inOut' },
-    scrollTrigger: {
-      trigger: scene,
-      start: 'top top',
-      end:   'bottom bottom',
-      scrub: 1.1,                                  // longer scrub = smoother lag
-      invalidateOnRefresh: true,
-      onUpdate: (self) => {
-        if (progBar) progBar.style.transform = `scaleX(${self.progress.toFixed(3)})`;
-      }
-    }
+    paused: true,
+    defaults: { ease: 'power3.inOut' }
   });
 
-  /* PHASE A — settle (0.00 → 0.10) — corners gracefully appear */
-  tl.to(corners, { opacity: 1, y: 0, duration: 0.10, ease: 'power2.out' }, 0.02);
+  // 0.00s : corners gracefully appear
+  tl.to(corners, { opacity: 1, y: 0, duration: 0.6, ease: 'power2.out' }, 0);
 
-  /* PHASE B — Stage 1 caption "The detail" (0.06 → 0.26)
-     Text reads, then fully fades before any frame movement. */
-  tl.to(captions[0], { opacity: 1, y: 0, duration: 0.06, ease: 'power3.out' }, 0.06);
-  tl.to(captions[0], { opacity: 0, y: -16, duration: 0.06, ease: 'power3.in'  }, 0.21);
+  // 0.30s : Caption 1 "The detail" appears, holds, then fades cleanly
+  tl.to(captions[0], { opacity: 1, y: 0, duration: 0.5, ease: 'power3.out' }, 0.30);
+  tl.to(captions[0], { opacity: 0, y: -14, duration: 0.4, ease: 'power3.in'  }, 1.40);
 
-  /* PHASE C — first pullback (0.30 → 0.48) — frame grows, camera zooms out */
-  tl.to(frame, { width: '46vw', duration: 0.18 }, 0.30);
-  tl.to(img,   { scale: 1.55, x: '3%', y: '-1%', duration: 0.18 }, 0.30);
+  // 1.55s : First pullback — frame grows, image zooms out
+  tl.to(frame, { width: '50vw', duration: 1.0 }, 1.55);
+  tl.to(img,   { scale: 1.55, x: '3%', y: '-1%', duration: 1.0 }, 1.55);
 
-  /* PHASE D — Stage 2 caption "The room" (0.50 → 0.66)
-     Frame is settled; caption reads alone. */
-  tl.to(captions[1], { opacity: 1, y: 0, duration: 0.06, ease: 'power3.out' }, 0.50);
-  tl.to(captions[1], { opacity: 0, y: -16, duration: 0.06, ease: 'power3.in'  }, 0.61);
+  // 2.55s : Caption 2 "The room" appears, holds, fades
+  tl.to(captions[1], { opacity: 1, y: 0, duration: 0.4, ease: 'power3.out' }, 2.55);
+  tl.to(captions[1], { opacity: 0, y: -14, duration: 0.4, ease: 'power3.in'  }, 3.45);
 
-  /* PHASE E — second pullback (0.66 → 0.84) — full-bleed */
-  tl.to(frame, { width: '100vw', height: '100vh', duration: 0.20 }, 0.66);
-  tl.to(img,   { scale: 1.05, x: '0%', y: '0%', duration: 0.20 }, 0.66);
-  tl.to(img,   { filter: 'brightness(0.88) contrast(1.05) saturate(0.92)', duration: 0.15, ease: 'power2.out' }, 0.68);
+  // 3.55s : Second pullback — frame to full bleed, image settles, brightens
+  tl.to(frame, { width: '100vw', height: '100vh', duration: 1.1 }, 3.55);
+  tl.to(img,   { scale: 1.05, x: '0%', y: '0%', duration: 1.1 }, 3.55);
+  tl.to(img,   { filter: 'brightness(0.88) contrast(1.05) saturate(0.92)', duration: 0.9, ease: 'power2.out' }, 3.75);
 
-  /* PHASE F — Stage 3 caption "The residence" (0.86 → 1.00) */
-  tl.to(captions[2], { opacity: 1, y: 0, duration: 0.05, ease: 'power3.out' }, 0.86);
-  // Hold visible until almost the end — fade with corners as scene exits
-  tl.to(captions[2], { opacity: 0, y: -16, duration: 0.05, ease: 'power3.in' }, 0.96);
-  tl.to(corners,     { opacity: 0, duration: 0.05, ease: 'power2.in' }, 0.95);
+  // 4.55s : Caption 3 "The residence" appears and stays
+  tl.to(captions[2], { opacity: 1, y: 0, duration: 0.55, ease: 'power3.out' }, 4.55);
 
-  /* Subtle continued zoom in the final moments for film feel */
-  tl.to(img, { scale: 1.0, duration: 0.18, ease: 'none' }, 0.82);
+  // 4.85s : subtle continued zoom for cinematic finish
+  tl.to(img, { scale: 1.0, duration: 0.6, ease: 'none' }, 4.85);
+
+  // Pin the section while the auto-play timeline runs.
+  // 100vh of additional scroll gives most users enough time to see the
+  // full ~4.8s animation while still letting them continue afterwards.
+  ScrollTrigger.create({
+    trigger: scene,
+    start: 'top top',
+    end:   '+=100%',
+    pin: true,
+    pinSpacing: true,
+    anticipatePin: 1,
+    invalidateOnRefresh: true,
+  });
+
+  // Trigger the auto-play timeline the moment the section enters viewport.
+  // Playing slightly before the pin engages means the first beats are
+  // already in motion by the time the user is "locked in" looking at it.
+  ScrollTrigger.create({
+    trigger: scene,
+    start: 'top 75%',
+    once: true,
+    onEnter: () => tl.play(0)
+  });
 }
 
 /* ───── 08 · WORK — horizontal pinned ───── */
