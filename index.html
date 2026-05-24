@@ -16,9 +16,27 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="styles.css?v=36" />
+  <link rel="stylesheet" href="styles.css?v=37" />
 </head>
 <body class="is-loading">
+
+  <!-- Bulletproof loader-hide + animation trigger.
+       This inline script runs even if vendor libraries are blocked,
+       guaranteeing the page never gets stuck under the loader. -->
+  <script>
+    (function(){
+      function unlock(){
+        document.body.classList.remove('is-loading');
+        var l = document.querySelector('[data-loader]');
+        if (l) { l.style.opacity = '0'; setTimeout(function(){ l.style.display = 'none'; }, 450); }
+      }
+      // Belt: fires no matter what after 1.6s
+      setTimeout(unlock, 1600);
+      // Braces: also fires as soon as the page is fully loaded
+      if (document.readyState === 'complete') setTimeout(unlock, 600);
+      else window.addEventListener('load', function(){ setTimeout(unlock, 400); });
+    })();
+  </script>
 
   <!-- Ambient Moncler-inspired background layer -->
   <div class="ambient" aria-hidden="true">
@@ -658,6 +676,6 @@
        running, .has-anim is never added, and CSS keeps every "pre-animation"
        element visible so the site still looks polished. -->
   <script>if (window.gsap) document.documentElement.classList.add('has-anim');</script>
-  <script src="script.js?v=36"></script>
+  <script src="script.js?v=37"></script>
 </body>
 </html>

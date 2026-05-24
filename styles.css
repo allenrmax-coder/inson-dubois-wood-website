@@ -1790,35 +1790,36 @@ html:not(.has-anim) .loader { display: none !important; }
 html:not(.has-anim) body    { overflow: auto !important; }
 
 /* Hero entrance — staggered CSS keyframes that play on page load */
-html:not(.has-anim) .hero__eyebrow {
+html:not(.has-anim) body:not(.is-loading) .hero__eyebrow {
   opacity: 0;
-  animation: idw-fadeInUp .95s cubic-bezier(.19,1,.22,1) .25s forwards;
+  animation: idw-fadeInUp .95s cubic-bezier(.19,1,.22,1) .15s forwards;
 }
-html:not(.has-anim) .hero__title .line__inner {
+html:not(.has-anim) body.is-loading .hero__eyebrow { opacity: 0; }
+html:not(.has-anim) body:not(.is-loading) .hero__title .line__inner {
   display: inline-block;
   transform: translateY(110%);
   animation: idw-lineMaskUp 1.25s cubic-bezier(.19,1,.22,1) forwards;
 }
-html:not(.has-anim) .hero__title .line:nth-child(1) .line__inner { animation-delay: .35s; }
-html:not(.has-anim) .hero__title .line:nth-child(2) .line__inner { animation-delay: .47s; }
-html:not(.has-anim) .hero__title .line:nth-child(3) .line__inner { animation-delay: .59s; }
-html:not(.has-anim) .hero__corner {
+html:not(.has-anim) body:not(.is-loading) .hero__title .line:nth-child(1) .line__inner { animation-delay: .15s; }
+html:not(.has-anim) body:not(.is-loading) .hero__title .line:nth-child(2) .line__inner { animation-delay: .27s; }
+html:not(.has-anim) body:not(.is-loading) .hero__title .line:nth-child(3) .line__inner { animation-delay: .39s; }
+html:not(.has-anim) body:not(.is-loading) .hero__corner {
   opacity: 0;
-  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) .5s forwards;
+  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) .25s forwards;
 }
-html:not(.has-anim) .hero__corner--tr { animation-delay: .55s; }
-html:not(.has-anim) .hero__corner--bl { animation-delay: .60s; }
-html:not(.has-anim) .hero__lede {
+html:not(.has-anim) body:not(.is-loading) .hero__corner--tr { animation-delay: .30s; }
+html:not(.has-anim) body:not(.is-loading) .hero__corner--bl { animation-delay: .35s; }
+html:not(.has-anim) body:not(.is-loading) .hero__lede {
   opacity: 0;
-  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) .85s forwards;
+  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) .55s forwards;
 }
-html:not(.has-anim) .hero__cta {
+html:not(.has-anim) body:not(.is-loading) .hero__cta {
   opacity: 0;
-  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) 1.05s forwards;
+  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) .75s forwards;
 }
-html:not(.has-anim) .hero__cue {
+html:not(.has-anim) body:not(.is-loading) .hero__cue {
   opacity: 0;
-  animation: idw-fadeIn 1s cubic-bezier(.19,1,.22,1) 1.25s forwards;
+  animation: idw-fadeIn 1s cubic-bezier(.19,1,.22,1) .95s forwards;
 }
 
 /* Hero collapses to a static viewport since scrubbed scene needs GSAP */
@@ -1842,7 +1843,25 @@ html:not(.has-anim) .reveal-frame {
   height: auto !important;
   position: relative !important;
   margin: 0 !important;
-  animation: idw-revealFrameOpen 1.4s cubic-bezier(.19,1,.22,1) forwards;
+}
+/* Reveal frame opens via IO-fired .is-revealed class (already in script) */
+html:not(.has-anim) .reveal-frame {
+  opacity: 0;
+  transform: scale(0.94);
+  clip-path: inset(50% 0 50% 0);
+  -webkit-clip-path: inset(50% 0 50% 0);
+  transition:
+    opacity 1.1s cubic-bezier(.19,1,.22,1),
+    transform 1.3s cubic-bezier(.19,1,.22,1),
+    clip-path 1.3s cubic-bezier(.19,1,.22,1),
+    -webkit-clip-path 1.3s cubic-bezier(.19,1,.22,1);
+}
+html:not(.has-anim) .reveal-frame.is-revealed,
+html:not(.has-anim) .scene--reveal.in-view .reveal-frame {
+  opacity: 1;
+  transform: scale(1);
+  clip-path: inset(0 0 0 0);
+  -webkit-clip-path: inset(0 0 0 0);
 }
 html:not(.has-anim) .reveal-frame img { transform: scale(1.08) !important; }
 html:not(.has-anim) .reveal-corner {
@@ -1862,24 +1881,27 @@ html:not(.has-anim) .reveal-caption {
   transform: none !important;
   width: 100% !important;
   text-align: center !important;
-  opacity: 0;
-  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) .8s forwards;
+  opacity: 1;     /* visible by default — IO will drive the entrance */
 }
 
-/* Lines outside hero get a simple fade-up — no scroll dependency */
+/* Lines outside hero: IntersectionObserver adds .is-in to the parent
+   .line; we animate the inner only when that class lands. This means
+   they only animate when scrolled into view, never under the loader. */
 html:not(.has-anim) .line__inner {
   display: inline-block;
+  transform: translateY(0);     /* default visible state */
+}
+html:not(.has-anim) .line.is-pending .line__inner {
   transform: translateY(110%);
-  animation: idw-lineMaskUp 1.1s cubic-bezier(.19,1,.22,1) .15s forwards;
+}
+html:not(.has-anim) .line.is-in .line__inner {
+  transform: translateY(0);
+  transition: transform 1.1s cubic-bezier(.19,1,.22,1);
 }
 
-/* Reveal blocks fade in (IntersectionObserver in JS will still drive
-   them progressively, but if both IO and GSAP are gone, this CSS
-   animation guarantees they appear). */
-html:not(.has-anim) .reveal {
-  opacity: 0;
-  animation: idw-fadeInUp 1s cubic-bezier(.19,1,.22,1) .25s forwards;
-}
+/* .reveal blocks already drive entrance via .is-in class in JS;
+   keep default visible if JS never runs. */
+html:not(.has-anim) .reveal { opacity: 1; }
 
 /* ───── 18 · REDUCED MOTION ───── */
 @media (prefers-reduced-motion: reduce) {

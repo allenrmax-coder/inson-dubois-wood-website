@@ -197,14 +197,21 @@ function initReveals() {
   }
 
   // ────────────── Vanilla fallback — runs when GSAP is blocked/missing ──────────────
-  // Show all content statically and use IntersectionObserver + CSS transitions
-  // to add a soft entrance to .reveal blocks.
-  document.querySelectorAll('.line__inner').forEach(el => { el.style.transform = 'translateY(0)'; el.style.opacity = '1'; });
+  // Lines outside the hero get the mask reveal via IO + .is-in toggle.
+  // Hero lines have their own CSS animation (gated on body:not(.is-loading)).
+  document.querySelectorAll('.line').forEach((line) => {
+    if (line.closest('[data-hero]')) return;
+    line.classList.add('is-pending');
+  });
 
   if (!('IntersectionObserver' in window)) {
+    // No IO? show everything immediately.
     document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-in'));
+    document.querySelectorAll('.line').forEach(line => { line.classList.remove('is-pending'); line.classList.add('is-in'); });
+    document.querySelectorAll('.reveal-frame').forEach(f => f.classList.add('is-revealed'));
     return;
   }
+
   const io = new IntersectionObserver((entries) => {
     entries.forEach((e) => {
       if (e.isIntersecting) {
@@ -214,6 +221,20 @@ function initReveals() {
     });
   }, { rootMargin: '-40px 0px' });
   document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  document.querySelectorAll('.line').forEach((line) => {
+    if (line.closest('[data-hero]')) return;
+    io.observe(line);
+  });
+  // Reveal frame opens when its section enters viewport
+  const revealFrameIO = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        document.querySelectorAll('.reveal-frame').forEach(f => f.classList.add('is-revealed'));
+        revealFrameIO.unobserve(e.target);
+      }
+    });
+  }, { rootMargin: '0px 0px -10% 0px' });
+  document.querySelectorAll('[data-scene="reveal"]').forEach(el => revealFrameIO.observe(el));
 }
 
 /* ───── 06 · HERO · pinned 3-act scroll scene ───── */
