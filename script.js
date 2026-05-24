@@ -164,41 +164,56 @@ function initMenu() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
 }
 
-/* ───── 05 · LINE-MASK + REVEAL PRIMITIVES ───── */
+/* ───── 05 · LINE-MASK + REVEAL PRIMITIVES — with vanilla fallback ───── */
 function initReveals() {
   document.body.classList.add('is-ready');
-  if (!window.gsap || !window.ScrollTrigger) {
-    // graceful fallback — show everything
-    document.querySelectorAll('.line__inner').forEach(el => el.style.transform = 'translateY(0)');
-    document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-in'));
+
+  const useGsap = !!(window.gsap && window.ScrollTrigger);
+
+  // ────────────── GSAP path (preferred) ──────────────
+  if (useGsap) {
+    document.querySelectorAll('.line__inner').forEach((inner) => {
+      const wrapper = inner.closest('.line');
+      if (!wrapper) return;
+      if (wrapper.closest('[data-hero]')) return;
+      const offset = inner.getBoundingClientRect().height || inner.offsetHeight || 80;
+      gsap.set(inner, { y: offset, opacity: 1 });
+      ScrollTrigger.create({
+        trigger: wrapper,
+        start: 'top 85%',
+        once: true,
+        onEnter: () => gsap.to(inner, { y: 0, duration: 1.2, ease: 'expo.out' })
+      });
+    });
+    document.querySelectorAll('.reveal').forEach((el) => {
+      ScrollTrigger.create({
+        trigger: el,
+        start: 'top 88%',
+        once: true,
+        onEnter: () => el.classList.add('is-in'),
+      });
+    });
     return;
   }
 
-  // Lines outside the hero (hero handles its own).
-  // Mask reveal via pixel-based fromTo — more reliable than yPercent vs CSS percent-translate.
-  document.querySelectorAll('.line__inner').forEach((inner) => {
-    const wrapper = inner.closest('.line');
-    if (!wrapper) return;
-    if (wrapper.closest('[data-hero]')) return;     // hero entrance handles these
-    const offset = inner.getBoundingClientRect().height || inner.offsetHeight || 80;
-    gsap.set(inner, { y: offset, opacity: 1 });
-    ScrollTrigger.create({
-      trigger: wrapper,
-      start: 'top 85%',
-      once: true,
-      onEnter: () => gsap.to(inner, { y: 0, duration: 1.2, ease: 'expo.out' })
-    });
-  });
+  // ────────────── Vanilla fallback — runs when GSAP is blocked/missing ──────────────
+  // Show all content statically and use IntersectionObserver + CSS transitions
+  // to add a soft entrance to .reveal blocks.
+  document.querySelectorAll('.line__inner').forEach(el => { el.style.transform = 'translateY(0)'; el.style.opacity = '1'; });
 
-  // .reveal blocks
-  document.querySelectorAll('.reveal').forEach((el) => {
-    ScrollTrigger.create({
-      trigger: el,
-      start: 'top 88%',
-      once: true,
-      onEnter: () => el.classList.add('is-in'),
+  if (!('IntersectionObserver' in window)) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('is-in'));
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    entries.forEach((e) => {
+      if (e.isIntersecting) {
+        e.target.classList.add('is-in');
+        io.unobserve(e.target);
+      }
     });
-  });
+  }, { rootMargin: '-40px 0px' });
+  document.querySelectorAll('.reveal').forEach(el => io.observe(el));
 }
 
 /* ───── 06 · HERO · pinned 3-act scroll scene ───── */
@@ -319,7 +334,8 @@ function initHero() {
 */
 function initRevealScene() {
   const scene = document.querySelector('[data-scene="reveal"]');
-  if (!scene || reduceMotion || isMobile() || !window.gsap) return;
+  if (!scene || reduceMotion || !window.gsap) return;
+  // (mobile is now supported — auto-play timeline works fine on touch)
 
   const frame    = scene.querySelector('[data-reveal-frame]');
   const img      = scene.querySelector('[data-reveal-img]');
