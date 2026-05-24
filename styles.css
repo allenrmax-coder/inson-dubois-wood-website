@@ -123,8 +123,10 @@ em {
   display: inline-block;
   will-change: transform;
 }
-/* When JS hasn't started yet, hide the lines to avoid a flash before they animate in */
-body:not(.is-ready) .line__inner { opacity: 0; }
+/* Hide line-mask insides while GSAP is preparing to animate them in.
+   The :not(.is-ready) makes this only apply before the JS boot completes.
+   The html.has-anim qualifier means it never applies if GSAP failed to load. */
+.has-anim body:not(.is-ready) .line__inner { opacity: 0; }
 
 /* ───── 04 · BUTTONS ───── */
 .btn {
@@ -1748,6 +1750,44 @@ body:not(.is-ready) .line__inner { opacity: 0; }
   .proj       { width: 86vw; }
   .work__title{ font-size: clamp(2.6rem, 13vw, 4.5rem); }
 }
+
+/* ───── 17b · NO-ANIMATIONS FALLBACK ─────
+   When the GSAP libraries fail to load (corp firewalls, aggressive
+   ad-blockers, broken CDNs, etc.) the inline script in <head> never
+   adds .has-anim to <html>. This block forces every "waiting to
+   animate" element back to a visible static state so the site still
+   reads as a polished editorial page. */
+html:not(.has-anim) .hero__eyebrow,
+html:not(.has-anim) .hero__lede,
+html:not(.has-anim) .hero__cta,
+html:not(.has-anim) .hero__cue,
+html:not(.has-anim) .hero__corner,
+html:not(.has-anim) .hero__caption,
+html:not(.has-anim) .reveal-corner,
+html:not(.has-anim) .reveal-caption,
+html:not(.has-anim) .reveal,
+html:not(.has-anim) .line__inner {
+  opacity: 1 !important;
+  transform: none !important;
+}
+html:not(.has-anim) .reveal-frame {
+  opacity: 1 !important;
+  transform: none !important;
+  clip-path: none !important;
+  -webkit-clip-path: none !important;
+}
+html:not(.has-anim) .loader { display: none !important; }
+html:not(.has-anim) body { overflow: auto !important; }
+/* Without scroll-driven scenes, give the reveal section a sensible
+   non-pinned height so the image just sits in the page like a normal
+   editorial figure. */
+html:not(.has-anim) .scene--reveal,
+html:not(.has-anim) .scene--reveal .scene__sticky { height: auto !important; min-height: 0 !important; position: relative !important; }
+html:not(.has-anim) .reveal-frame { width: min(80%, 540px) !important; }
+html:not(.has-anim) .hero { height: auto !important; min-height: 100vh; }
+html:not(.has-anim) .hero__sticky { position: relative !important; height: auto !important; min-height: 100vh; }
+html:not(.has-anim) .process { height: auto !important; }
+html:not(.has-anim) .process__sticky { position: relative !important; height: auto !important; }
 
 /* ───── 18 · REDUCED MOTION ───── */
 @media (prefers-reduced-motion: reduce) {
