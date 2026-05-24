@@ -563,24 +563,32 @@ function initContactForm() {
   });
 }
 
-/* ───── 14 · BOOT ───── */
+/* ───── 14 · BOOT — safe wrapper so one error never kills the whole site ───── */
+function safe(label, fn) {
+  try { fn(); } catch (e) { try { console.warn('[idw] ' + label + ' failed:', e); } catch (_) {} }
+}
 (async function boot() {
-  initAnchors();
-  initNav();
-  initMenu();
-  initContactForm();
-  initServices();
+  safe('anchors',     initAnchors);
+  safe('nav',         initNav);
+  safe('menu',        initMenu);
+  safe('contactForm', initContactForm);
+  safe('services',    initServices);
 
-  await runLoader();
+  try { await runLoader(); } catch (e) {
+    // make sure the page is never left under the loader
+    document.body.classList.remove('is-loading');
+    const ldr = document.querySelector('[data-loader]');
+    if (ldr) ldr.style.display = 'none';
+  }
 
   requestAnimationFrame(() => {
-    initReveals();
-    initHero();
-    initRevealScene();
-    initWork();
-    initCounters();
-    initFooterMarquee();
-    if (window.ScrollTrigger) ScrollTrigger.refresh();
+    safe('reveals',       initReveals);
+    safe('hero',          initHero);
+    safe('revealScene',   initRevealScene);
+    safe('work',          initWork);
+    safe('counters',      initCounters);
+    safe('footerMarquee', initFooterMarquee);
+    try { if (window.ScrollTrigger) ScrollTrigger.refresh(); } catch (e) {}
   });
 })();
 
